@@ -45,6 +45,7 @@ def delfi(input_file: str,
           merge_bins:bool=True,
           window_size: int=5000000,
           quality_threshold: int=30,
+          short_length_threshold: int=151,
           workers: int=1,
           verbose: Union[int, bool]=False) -> pandas.DataFrame:
     """
@@ -122,6 +123,7 @@ def delfi(input_file: str,
         remove_nocov: {remove_nocov}
         merge_bins: {merge_bins}
         quality_threshold: {quality_threshold}
+        short_length_threshold: {short_length_threshold}
         workers: {workers}
         verbose: {verbose}
         \n""")
@@ -219,6 +221,7 @@ def delfi(input_file: str,
                 stop,
                 blacklist_file,
                 quality_threshold,
+                short_length_threshold,
                 verbose - 1 if verbose > 1 else 0))
 
     if (verbose):
@@ -325,6 +328,7 @@ def _delfi_single_window(
         window_stop: int,
         blacklist_file: str=None,
         quality_threshold: int=30,
+        short_length_threshold: int=151,
         verbose: Union[int,bool]=False) -> tuple:
     """
     Calculates short and long counts for one window.
@@ -416,7 +420,7 @@ def _delfi_single_window(
             and not read_in_tcmere
         ):
             # append length of fragment to list
-            if (frag_length >= 151):
+            if (frag_length >= short_length_threshold):
                 long_lengths.append(abs(frag_length))
             else:
                 short_lengths.append(abs(frag_length))
