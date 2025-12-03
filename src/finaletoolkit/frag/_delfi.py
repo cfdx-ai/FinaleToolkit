@@ -46,6 +46,7 @@ def delfi(input_file: str,
           window_size: int=5000000,
           quality_threshold: int=30,
           short_length_threshold: int=151,
+          intersect_policy: str="midpoint",
           workers: int=1,
           verbose: Union[int, bool]=False) -> pandas.DataFrame:
     """
@@ -124,6 +125,7 @@ def delfi(input_file: str,
         merge_bins: {merge_bins}
         quality_threshold: {quality_threshold}
         short_length_threshold: {short_length_threshold}
+        intersect_policy: {intersect_policy}
         workers: {workers}
         verbose: {verbose}
         \n""")
@@ -222,6 +224,7 @@ def delfi(input_file: str,
                 blacklist_file,
                 quality_threshold,
                 short_length_threshold,
+                intersect_policy,
                 verbose - 1 if verbose > 1 else 0))
 
     if (verbose):
@@ -329,6 +332,7 @@ def _delfi_single_window(
         blacklist_file: str=None,
         quality_threshold: int=30,
         short_length_threshold: int=151,
+        intersect_policy: str="midpoint",
         verbose: Union[int,bool]=False) -> tuple:
     """
     Calculates short and long counts for one window.
@@ -391,7 +395,8 @@ def _delfi_single_window(
         window_start,
         window_stop,
         min_length=100,
-        max_length=220):
+        max_length=220,
+        intersect_policy=intersect_policy):
 
         frag_length = frag_stop - frag_start
 
