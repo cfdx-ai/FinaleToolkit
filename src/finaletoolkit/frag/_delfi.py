@@ -16,6 +16,16 @@ from finaletoolkit.utils.utils import frag_generator, overlaps, chrom_sizes_to_l
 from finaletoolkit.genome.gaps import GenomeGaps, ContigGaps
 
 
+# Canonical DELFI fragment-length model (Cristiano et al., Nature 2019), measured on
+# true, untrimmed template lengths: fragments are counted only within a fixed
+# [100, 220] bp window and split into short/long at 151 bp. The `end_trim_offset`
+# argument of `delfi` shifts all three bounds down together for reads whose ends were
+# trimmed before alignment (see that parameter's docstring).
+DELFI_MIN_FRAGMENT_LENGTH = 100
+DELFI_MAX_FRAGMENT_LENGTH = 220
+DELFI_SHORT_LENGTH_THRESHOLD = 151
+
+
 def trim_coverage(window_data:np.ndarray, trim_percentile:int=10):
     """
     function to trim lowest 10% of bins by coverage. If a window is
@@ -45,7 +55,7 @@ def delfi(input_file: str,
           merge_bins:bool=True,
           window_size: int=5000000,
           quality_threshold: int=30,
-          short_length_threshold: int=151,
+          end_trim_offset: int=0,
           intersect_policy: str="midpoint",
           workers: int=1,
           verbose: Union[int, bool]=False) -> pandas.DataFrame:
@@ -95,6 +105,13 @@ def delfi(input_file: str,
     window_size: int
         Size (in bases) of non-overlapping windows to cover genome. Default is
         5000000.
+    end_trim_offset: int
+        Base pairs by which measured fragment (template) lengths fall short of
+        true lengths because read ends were trimmed before alignment. DELFI's
+        canonical length model (100-220 bp count window, 151 bp short/long split;
+        true lengths per Cristiano et al. 2019) is shifted down by this many bp so
+        it applies to your measured lengths. For reads clipped N bp at each outer
+        (5') end, pass 2*N. Default is 0 (untrimmed reads, canonical DELFI).
     workers: int, optional
         Number of worker processes to use. Default is 1.
     verbose: int or bool, optional
@@ -110,6 +127,13 @@ def delfi(input_file: str,
 
     # TODO: add support to fasta for reference_file
 
+    # Shift DELFI's canonical (true-length) length model down onto the measured
+    # lengths of end-trimmed reads. With end_trim_offset=0 these are the exact
+    # Cristiano et al. (2019) bounds, so untrimmed callers are unaffected.
+    min_length = DELFI_MIN_FRAGMENT_LENGTH - end_trim_offset
+    max_length = DELFI_MAX_FRAGMENT_LENGTH - end_trim_offset
+    short_length_threshold = DELFI_SHORT_LENGTH_THRESHOLD - end_trim_offset
+
     if (verbose):
         start_time = time.time()
         stderr.write(f"""
@@ -124,6 +148,9 @@ def delfi(input_file: str,
         remove_nocov: {remove_nocov}
         merge_bins: {merge_bins}
         quality_threshold: {quality_threshold}
+        end_trim_offset: {end_trim_offset}
+        min_length: {min_length}
+        max_length: {max_length}
         short_length_threshold: {short_length_threshold}
         intersect_policy: {intersect_policy}
         workers: {workers}
@@ -224,6 +251,8 @@ def delfi(input_file: str,
                 blacklist_file,
                 quality_threshold,
                 short_length_threshold,
+                min_length,
+                max_length,
                 intersect_policy,
                 verbose - 1 if verbose > 1 else 0))
 
@@ -332,6 +361,8 @@ def _delfi_single_window(
         blacklist_file: str=None,
         quality_threshold: int=30,
         short_length_threshold: int=151,
+        min_length: int=100,
+        max_length: int=220,
         intersect_policy: str="midpoint",
         verbose: Union[int,bool]=False) -> tuple:
     """
@@ -394,8 +425,8 @@ def _delfi_single_window(
         quality_threshold,
         window_start,
         window_stop,
-        min_length=100,
-        max_length=220,
+        min_length=min_length,
+        max_length=max_length,
         intersect_policy=intersect_policy):
 
         frag_length = frag_stop - frag_start

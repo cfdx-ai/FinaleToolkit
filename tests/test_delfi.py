@@ -48,4 +48,23 @@ def test_overall(request):
     gaps = GenomeGaps.ucsc_hg19()
     
     results = delfi(frag_file, autosomes, bins_file, twobit, blacklist, gaps)
-    
+
+
+def test_end_trim_offset(request):
+    """end_trim_offset=0 reproduces canonical DELFI; a nonzero offset shifts the
+    count window + short/long split, so short/long counts change."""
+    data = request.path.parent / 'data' / 'delfi'
+    frag_file = data / 'hg19.chr1.6Mb.bam'
+    autosomes = data / 'human.hg19.chr1.6Mb.genome'
+    bins_file = data / 'hg19.hic.chr1.6Mb.txt'
+    twobit = str(data / 'hg19.chr1.10Mb.2bit')
+    blacklist = data / 'hg19_darkregion.bed'
+    gaps = GenomeGaps.ucsc_hg19()
+
+    args = (frag_file, autosomes, bins_file, twobit, blacklist, gaps)
+    baseline = delfi(*args)
+    assert delfi(*args, end_trim_offset=0).equals(baseline), (
+        "end_trim_offset=0 must be a no-op vs. canonical DELFI")
+    shifted = delfi(*args, end_trim_offset=40)
+    assert not shifted[['short', 'long']].equals(baseline[['short', 'long']]), (
+        "a 40bp offset must change which fragments are counted/split")
