@@ -611,6 +611,16 @@ def main_cli_parser():
         type=int,
         help="Minimum mapping quality threshold.")
     cli_delfi.add_argument(
+        '--end-trim-offset',
+        default=0,
+        type=int,
+        dest='end_trim_offset',
+        help="Base pairs by which measured fragment lengths fall short of true "
+        "lengths due to read-end trimming before alignment. Shifts DELFI's "
+        "canonical 100-220 bp window and 151 bp short/long split down by this "
+        "amount. For reads clipped N bp at each outer (5') end, pass 2*N. "
+        "Default 0 (untrimmed).")
+    cli_delfi.add_argument(
         '-w',
         '--workers',
         default=1,

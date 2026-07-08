@@ -10,6 +10,7 @@ import pandas as pd
 
 from finaletoolkit.frag import delfi_merge_bins
 from finaletoolkit.frag import delfi
+from finaletoolkit.frag._delfi import DELFI_MIN_FRAGMENT_LENGTH
 from finaletoolkit.genome.gaps import GenomeGaps
 
 
@@ -48,4 +49,28 @@ def test_overall(request):
     gaps = GenomeGaps.ucsc_hg19()
     
     results = delfi(frag_file, autosomes, bins_file, twobit, blacklist, gaps)
-    
+
+
+def test_end_trim_offset(request):
+    """end_trim_offset=0 gives canonical DELFI (pinned short/long totals for this
+    fixture); a nonzero offset shifts the count window + split; an offset that would
+    empty the window is rejected."""
+    data = request.path.parent / 'data' / 'delfi'
+    frag_file = data / 'hg19.chr1.6Mb.bam'
+    autosomes = data / 'human.hg19.chr1.6Mb.genome'
+    bins_file = data / 'hg19.hic.chr1.6Mb.txt'
+    twobit = str(data / 'hg19.chr1.10Mb.2bit')
+    blacklist = data / 'hg19_darkregion.bed'
+    gaps = GenomeGaps.ucsc_hg19()
+
+    args = (frag_file, autosomes, bins_file, twobit, blacklist, gaps)
+    baseline = delfi(*args)  # canonical: 100-220 window, split 151
+    assert int(baseline['short'].sum()) == 6155
+    assert int(baseline['long'].sum()) == 33534
+
+    shifted = delfi(*args, end_trim_offset=40)
+    assert not shifted[['short', 'long']].equals(baseline[['short', 'long']]), (
+        "a 40bp offset must change which fragments are counted/split")
+
+    with pytest.raises(ValueError):
+        delfi(*args, end_trim_offset=DELFI_MIN_FRAGMENT_LENGTH)  # empties the window
