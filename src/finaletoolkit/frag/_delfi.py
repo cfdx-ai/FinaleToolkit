@@ -130,6 +130,11 @@ def delfi(input_file: str,
     # Shift DELFI's canonical (true-length) length model down onto the measured
     # lengths of end-trimmed reads. With end_trim_offset=0 these are the exact
     # Cristiano et al. (2019) bounds, so untrimmed callers are unaffected.
+    if not 0 <= end_trim_offset < DELFI_MIN_FRAGMENT_LENGTH:
+        raise ValueError(
+            f"end_trim_offset must be in [0, {DELFI_MIN_FRAGMENT_LENGTH}); got "
+            f"{end_trim_offset}. Larger offsets drive the DELFI count window "
+            "non-positive and would silently drop all fragments.")
     min_length = DELFI_MIN_FRAGMENT_LENGTH - end_trim_offset
     max_length = DELFI_MAX_FRAGMENT_LENGTH - end_trim_offset
     short_length_threshold = DELFI_SHORT_LENGTH_THRESHOLD - end_trim_offset
@@ -360,9 +365,9 @@ def _delfi_single_window(
         window_stop: int,
         blacklist_file: str=None,
         quality_threshold: int=30,
-        short_length_threshold: int=151,
-        min_length: int=100,
-        max_length: int=220,
+        short_length_threshold: int=DELFI_SHORT_LENGTH_THRESHOLD,
+        min_length: int=DELFI_MIN_FRAGMENT_LENGTH,
+        max_length: int=DELFI_MAX_FRAGMENT_LENGTH,
         intersect_policy: str="midpoint",
         verbose: Union[int,bool]=False) -> tuple:
     """
