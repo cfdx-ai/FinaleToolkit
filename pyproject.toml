@@ -56,4 +56,4 @@ Wiki = "https://github.com/epifluidlab/FinaleToolkit/wiki"
 
 [dependency-groups]
 test = ["pytest", "pytest-cov"]
-docs = ["sphinx", "sphinx-argparse", "pydata-sphinx-theme"]
+docs = ["sphinx", "sphinx-argparse", "pydata-sphinx-theme", "certifi>=2026.10.19"]
